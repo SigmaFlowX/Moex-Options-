@@ -13,8 +13,8 @@ def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, ex
     flat_ts = ql.YieldTermStructureHandle(ql.FlatForward(eval_date, risk_free_rate, day_count))
 
     flat_vol_ts = ql.BlackVolTermStructureHandle(ql.BlackConstantVol(eval_date, calendar, volatility, day_count))
-    dividend_ts = ql.YieldTermStructureHandle(ql.FlatForward(eval_date, 0.0, day_count)
-    )
+    dividend_ts = ql.YieldTermStructureHandle(ql.FlatForward(eval_date, 0.0, day_count))
+
     process = ql.BlackScholesMertonProcess(
         spot_handle,
         dividend_ts,
@@ -47,6 +47,49 @@ def solve_black_scholes(spot_price, strike_price, risk_free_rate, volatility, ex
     }
 
     return dict
+
+def get_implied_vol(market_price, spot_price, strike_price, risk_free_rate, expiry_date, eval_date, option_type):
+
+    calendar = ql.TARGET()
+    day_count = ql.Actual365Fixed()
+    ql.Settings.instance().evaluationDate = eval_date
+
+    spot_handle = ql.QuoteHandle(ql.SimpleQuote(spot_price))
+    flat_ts = ql.YieldTermStructureHandle(ql.FlatForward(eval_date, risk_free_rate, day_count))
+
+    dividend_ts = ql.YieldTermStructureHandle(ql.FlatForward(eval_date, 0.0, day_count))
+
+    initial_vol = 0.2
+    vol_ts = ql.BlackVolTermStructureHandle(ql.BlackConstantVol(eval_date, calendar, initial_vol, day_count))
+
+    process = ql.BlackScholesMertonProcess(
+        spot_handle,
+        dividend_ts,
+        flat_ts,
+        vol_ts
+    )
+
+    if option_type == "call":
+        payoff = ql.PlainVanillaPayoff(ql.Option.Call, strike_price)
+    else:
+        payoff = ql.PlainVanillaPayoff(ql.Option.Put, strike_price)
+
+    exercise = ql.EuropeanExercise(expiry_date)
+    option = ql.VanillaOption(payoff, exercise)
+
+    engine = ql.AnalyticEuropeanEngine(process)
+    option.setPricingEngine(engine)
+
+    implied_vol = option.impliedVolatility(
+        market_price,
+        process,
+        1e-6,
+        100,
+        1e-4,
+        5.0
+    )
+
+    return implied_vol
 
 if __name__ == "__main__":
     price = 300
