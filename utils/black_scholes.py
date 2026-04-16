@@ -84,9 +84,9 @@ def get_implied_vol(market_price, spot_price, strike_price, risk_free_rate, expi
         market_price,
         process,
         1e-6,
-        100,
-        1e-4,
-        5.0
+        200,
+        1e-6,
+        10.0
     )
 
     return implied_vol
